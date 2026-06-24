@@ -1,7 +1,7 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-import { connectDatabase, mongoUri } from './config/database.js';
+import { connectDatabase, isDatabaseConnected, mongoUri } from './config/database.js';
 import { apiRouter } from './routes/api.js';
 
 dotenv.config();
@@ -24,22 +24,24 @@ app.get('/health', (_request, response) => {
     backendPort: port,
     mongoUri,
     apiBaseUrl: baseUrl,
+    databaseConnected: isDatabaseConnected(),
   });
 });
 
-async function startServer() {
-  try {
-    await connectDatabase();
+function startServer() {
+  app.listen(port, () => {
+    console.log(`OctoFit Tracker API listening on port ${port}`);
+    console.log(`MongoDB connection configured for ${mongoUri}`);
+    console.log(`API base URL configured as ${baseUrl}`);
+  });
 
-    app.listen(port, () => {
-      console.log(`OctoFit Tracker API listening on port ${port}`);
-      console.log(`MongoDB connection configured for ${mongoUri}`);
-      console.log(`API base URL configured as ${baseUrl}`);
+  connectDatabase()
+    .then(() => {
+      console.log('MongoDB connection established.');
+    })
+    .catch((error: unknown) => {
+      console.error('MongoDB connection unavailable:', error);
     });
-  } catch (error) {
-    console.error('Failed to start OctoFit Tracker API:', error);
-    process.exit(1);
-  }
 }
 
-void startServer();
+startServer();

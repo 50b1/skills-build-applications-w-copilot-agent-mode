@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { isDatabaseConnected } from '../config/database.js';
 import {
   ActivityModel,
   LeaderboardModel,
@@ -26,6 +27,14 @@ function getCollectionItems(route: RouteConfig) {
 for (const route of routes) {
   apiRouter.get(route.routerPath, async (_request, response, next) => {
     try {
+      if (!isDatabaseConnected()) {
+        response.status(503).json({
+          error: 'MongoDB connection is unavailable',
+          endpoint: route.fullPath,
+        });
+        return;
+      }
+
       const items = await getCollectionItems(route);
       response.json(items);
     } catch (error) {
